@@ -26,3 +26,45 @@
   width: 1rem;
   height: 1rem;
 }
+
+/* --- Changelog Tooltip --- */
+.changelog-tooltip {
+  position: absolute;
+  z-index: 1000;
+  max-width: 300px;
+  padding: 12px;
+  border-radius: 6px;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  white-space: pre-line;
+  word-wrap: break-word;
+  overflow: hidden;
+  border: 1px solid #444;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Add a small arrow to the tooltip */
+.changelog-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid #2a2a2a;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .changelog-tooltip {
+    max-width: 250px;
+    font-size: 12px;
+    padding: 8px;
+  }
+}
