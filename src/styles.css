@@ -1,0 +1,28 @@
+/* hide cards when the toggle is ON */
+.nmdh-hidden { display: none !important; }
+
+/* --- toggle styling ------------------------------------------------------ */
+#nmdh-toggle {
+  /* match Nexus button height & spacing */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.75rem;      /* ≈ min-h-7 */
+  padding: 0 0.65rem;       /* px-2.5 */
+  border-radius: 0.25rem;   /* rounded */
+  font-size: 0.875rem;      /* typography-body-md */
+  font-weight: 500;
+  background: var(--color-translucent-weaker, rgba(255,255,255,0.05));
+  color: var(--color-neutral-moderate, #ccc);
+  cursor: pointer;
+}
+
+#nmdh-toggle:hover {
+  background: var(--color-overlay-hover, rgba(255,255,255,0.10));
+}
+
+#nmdh-toggle input {
+  accent-color: currentColor;   /* let checkbox inherit text colour */
+  width: 1rem;
+  height: 1rem;
+}
