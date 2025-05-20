@@ -30,12 +30,7 @@
   "content_scripts": [
     {
       "matches": ["https://*.nexusmods.com/*"],
-      "js": [
-        {
-          "type": "module",
-          "src": "src/content/index.js"
-        }
-      ],
+      "js": ["src/content/index.js"],
       "css": ["src/content/styles.css"],
       "run_at": "document_idle"
     }

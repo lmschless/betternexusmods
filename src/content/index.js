@@ -1,14 +1,16 @@
 // src/content/index.js
 
-// Function to load a module with error handling
-function loadModule(modulePath) {
+// Function to load a script with error handling
+function loadScript(scriptPath) {
   return new Promise((resolve) => {
     const script = document.createElement('script');
-    script.src = chrome.runtime.getURL(modulePath);
-    script.type = 'module';
-    script.onload = () => resolve();
+    script.src = chrome.runtime.getURL(scriptPath);
+    script.onload = () => {
+      console.log(`[Nexus Mods Helper] Loaded script: ${scriptPath}`);
+      resolve();
+    };
     script.onerror = (error) => {
-      console.error(`[Nexus Mods Helper] Error loading module ${modulePath}:`, error);
+      console.error(`[Nexus Mods Helper] Error loading script ${scriptPath}:`, error);
       resolve();
     };
     (document.head || document.documentElement).appendChild(script);
@@ -21,17 +23,28 @@ function initializeFeatures() {
   if (window.nmhInitialized) return;
   window.nmhInitialized = true;
 
+  console.log('[Nexus Mods Helper] Initializing features...');
+  
   // Initialize features if they exist
-  if (window.HideDownloadedMods?.init) window.HideDownloadedMods.init();
-  if (window.ChangelogHover?.init) window.ChangelogHover.init();
+  if (window.HideDownloadedMods?.init) {
+    console.log('[Nexus Mods Helper] Initializing HideDownloadedMods');
+    window.HideDownloadedMods.init();
+  }
+  
+  if (window.ChangelogHover?.init) {
+    console.log('[Nexus Mods Helper] Initializing ChangelogHover');
+    window.ChangelogHover.init();
+  }
 }
 
 // Main initialization function
 async function init() {
   try {
-    // Load feature modules
-    await loadModule('src/content/features/hideDownloadedMods.js');
-    await loadModule('src/content/features/changelogHover.js');
+    console.log('[Nexus Mods Helper] Starting initialization...');
+    
+    // Load feature scripts
+    await loadScript('src/content/features/hideDownloadedMods.js');
+    await loadScript('src/content/features/changelogHover.js');
     
     // Initial feature initialization
     initializeFeatures();
@@ -43,6 +56,7 @@ async function init() {
       );
       
       if (nodesAdded) {
+        console.log('[Nexus Mods Helper] New content detected, reinitializing features...');
         initializeFeatures();
       }
     });
@@ -51,6 +65,8 @@ async function init() {
       childList: true, 
       subtree: true 
     });
+    
+    console.log('[Nexus Mods Helper] Initialization complete');
   } catch (error) {
     console.error('[Nexus Mods Helper] Error during initialization:', error);
   }
@@ -58,7 +74,9 @@ async function init() {
 
 // Start initialization when DOM is ready
 if (document.readyState === 'loading') {
+  console.log('[Nexus Mods Helper] Waiting for DOM to load...');
   document.addEventListener('DOMContentLoaded', init);
 } else {
+  console.log('[Nexus Mods Helper] DOM already loaded, initializing...');
   init();
 }
