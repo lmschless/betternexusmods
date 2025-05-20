@@ -1,21 +1,38 @@
 {
-  "name": "Hide downloaded mods",
-  "description": "Hides any NexusMods mod listing you have already downloaded.",
-  "version": "0.1.1",
   "manifest_version": 3,
-
+  "name": "Nexus Mods Helper",
+  "version": "0.1.7",
+  "description": "Enhance Nexus Mods with download hiding and changelog previews",
+  
   "icons": {
     "128": "icons/hidedownloadedmods.png"
   },
-
-  "content_scripts": [
+  
+  "permissions": [
+    "storage"
+  ],
+  
+  "host_permissions": [
+    "https://*.nexusmods.com/*"
+  ],
+  
+  "web_accessible_resources": [
     {
-      "matches": ["https://www.nexusmods.com/*"],
-      "js": ["src/content.js"],
-      "css": ["src/styles.css"],
-      "run_at": "document_idle"
+      "resources": [
+        "src/content/features/*.js",
+        "src/content/styles.css"
+      ],
+      "matches": ["https://*.nexusmods.com/*"]
     }
   ],
-
-  "host_permissions": ["https://www.nexusmods.com/*"]
+  
+  "content_scripts": [
+    {
+      "matches": ["https://*.nexusmods.com/*"],
+      "js": ["src/content/index.js"],
+      "css": ["src/content/styles.css"],
+      "type": "module",
+      "run_at": "document_idle"
+    }
+  ]
 }
