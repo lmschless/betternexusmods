@@ -19,8 +19,9 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "src/content/styles.css",
         "src/content/features/*.js",
-        "src/content/styles.css"
+        "src/content/index.js"
       ],
       "matches": ["https://*.nexusmods.com/*"]
     }
@@ -29,9 +30,13 @@
   "content_scripts": [
     {
       "matches": ["https://*.nexusmods.com/*"],
-      "js": ["src/content/index.js"],
+      "js": [
+        {
+          "type": "module",
+          "src": "src/content/index.js"
+        }
+      ],
       "css": ["src/content/styles.css"],
-      "type": "module",
       "run_at": "document_idle"
     }
   ]

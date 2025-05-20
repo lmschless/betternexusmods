@@ -36,26 +36,28 @@ function getFromCache(url) {
   }
 }
 
-export const ChangelogHover = {
+// Expose ChangelogHover to window
+window.ChangelogHover = {
+  isFetching,
+  
   init() {
     this.setupChangelogHover();
     
-    // Setup observer for dynamic content
+    // Set up a mutation observer to handle dynamically loaded content
     const observer = new MutationObserver((mutations) => {
-      const nodesAdded = mutations.some(mutation => 
-        mutation.addedNodes && mutation.addedNodes.length > 0
-      );
-      if (nodesAdded) {
-        this.setupChangelogHover();
-      }
+      mutations.forEach((mutation) => {
+        if (mutation.addedNodes.length > 0) {
+          this.setupChangelogHover();
+        }
+      });
     });
     
-    observer.observe(document.body, { 
-      childList: true, 
-      subtree: true 
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
     });
   },
-
+  
   async fetchModChangelog(modUrl) {
     if (isFetching.has(modUrl)) return;
     isFetching.set(modUrl, true);
@@ -88,7 +90,7 @@ export const ChangelogHover = {
       isFetching.delete(modUrl);
     }
   },
-
+  
   setupChangelogHover() {
     const tooltip = document.createElement('div');
     tooltip.className = 'changelog-tooltip';

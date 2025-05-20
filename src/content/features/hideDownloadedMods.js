@@ -1,5 +1,5 @@
 // src/content/features/hideDownloadedMods.js
-export const HideDownloadedMods = {
+window.HideDownloadedMods = {
   init() {
     try {
       this.ensureToggleExists();

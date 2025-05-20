@@ -1,28 +1,40 @@
 // src/content/index.js
 
-async function loadModule(importFn) {
-  try {
-    return await importFn();
-  } catch (error) {
-    console.error('[Nexus Mods Helper] Error loading module:', error);
-    return null;
-  }
+// Function to load a module with error handling
+function loadModule(modulePath) {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL(modulePath);
+    script.type = 'module';
+    script.onload = () => resolve();
+    script.onerror = (error) => {
+      console.error(`[Nexus Mods Helper] Error loading module ${modulePath}:`, error);
+      resolve();
+    };
+    (document.head || document.documentElement).appendChild(script);
+  });
 }
 
+// Function to initialize features
+function initializeFeatures() {
+  // Check if features are already initialized
+  if (window.nmhInitialized) return;
+  window.nmhInitialized = true;
+
+  // Initialize features if they exist
+  if (window.HideDownloadedMods?.init) window.HideDownloadedMods.init();
+  if (window.ChangelogHover?.init) window.ChangelogHover.init();
+}
+
+// Main initialization function
 async function init() {
   try {
-    // Load modules
-    const { HideDownloadedMods } = await loadModule(
-      () => import('./features/hideDownloadedMods.js')
-    );
+    // Load feature modules
+    await loadModule('src/content/features/hideDownloadedMods.js');
+    await loadModule('src/content/features/changelogHover.js');
     
-    const { ChangelogHover } = await loadModule(
-      () => import('./features/changelogHover.js')
-    );
-    
-    // Initialize features if they exist
-    if (HideDownloadedMods?.init) HideDownloadedMods.init();
-    if (ChangelogHover?.init) ChangelogHover.init();
+    // Initial feature initialization
+    initializeFeatures();
     
     // Setup observer for dynamic content
     const observer = new MutationObserver((mutations) => {
@@ -31,8 +43,7 @@ async function init() {
       );
       
       if (nodesAdded) {
-        if (HideDownloadedMods?.init) HideDownloadedMods.init();
-        if (ChangelogHover?.init) ChangelogHover.init();
+        initializeFeatures();
       }
     });
     
