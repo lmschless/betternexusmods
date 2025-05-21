@@ -1,7 +1,19 @@
 // Infinite Scroll for Nexus Mods main mods page
 (function() {
-    // Only run on the main mods listing page
-    if (!/\/nexusmods\.com\/[^/]+\/mods\/?(\?.*)?$/.test(window.location.href)) return;
+    // Only run on the main mods listing page (support www and subdomains, http/https)
+    if (!/^https?:\/\/(www\.|[a-z0-9-]+\.)?nexusmods\.com\/[^/]+\/mods\/?(\?.*)?$/.test(window.location.href)) return;
+
+    // Check user option before enabling infinite scroll
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+        chrome.storage.sync.get({ infiniteScroll: true }, function(options) {
+            if (options.infiniteScroll) {
+                initInfiniteScroll();
+            }
+        });
+    } else {
+        // fallback: default enabled
+        initInfiniteScroll();
+    }
 
     let loading = false;
     let nextPageUrl = null;

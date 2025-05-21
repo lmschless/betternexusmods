@@ -3,9 +3,11 @@ function saveOptions(e) {
     e.preventDefault();
     const hideDownloadedMods = document.getElementById('hideDownloadedMods').checked;
     const hoverChangelogs = document.getElementById('hoverChangelogs').checked;
+    const infiniteScroll = document.getElementById('infiniteScroll').checked;
     chrome.storage.sync.set({
         hideDownloadedMods,
-        hoverChangelogs
+        hoverChangelogs,
+        infiniteScroll
     }, function() {
         document.getElementById('status').textContent = 'Options saved.';
         setTimeout(() => {
