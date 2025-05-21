@@ -1,38 +1,20 @@
 {
-  "manifest_version": 3,
-  "name": "Nexus Mods Helper",
-  "version": "0.1.7",
-  "description": "Enhance Nexus Mods with download hiding and changelog previews",
-  
-  "icons": {
-    "128": "icons/hidedownloadedmods.png"
-  },
-  
-  "permissions": [
-    "storage"
-  ],
-  
-  "host_permissions": [
-    "https://*.nexusmods.com/*"
-  ],
-  
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "src/content/styles.css",
-        "src/content/features/*.js",
-        "src/content/index.js"
-      ],
-      "matches": ["https://*.nexusmods.com/*"]
-    }
-  ],
-  
-  "content_scripts": [
-    {
-      "matches": ["https://*.nexusmods.com/*"],
-      "js": ["src/content/index.js"],
-      "css": ["src/content/styles.css"],
-      "run_at": "document_idle"
-    }
-  ]
-}
+    "manifest_version": 3,
+    "name": "Nexus Mods Helper",
+    "version": "0.1.3",
+    "description": "Enhance Nexus Mods browsing experience",
+    "permissions": ["storage"],
+    "icons": {
+      "128": "icons/hidedownloadedmods.png"
+    },
+    
+    "content_scripts": [
+      {
+        "matches": ["*://*.nexusmods.com/*"],
+        "js": ["index.js"],
+        "css": ["styles.css"],
+        "run_at": "document_idle"
+
+      }
+    ]
+  }
