@@ -4,7 +4,7 @@ function getToolbar() {
   return document.querySelector(".flex.items-center.gap-x-3");
 }
 
-function ensureToggleExists() {
+function ensureToggleExists(options) {
   const toolbar = getToolbar();
   if (!toolbar) return; // toolbar not yet in DOM
 
@@ -23,6 +23,11 @@ function ensureToggleExists() {
   // put it at the very left
   toolbar.prepend(wrapper);
 
+  // Set initial checkbox state from options
+  if (options && typeof options.hideDownloadedMods === 'boolean') {
+    wrapper.firstElementChild.checked = options.hideDownloadedMods;
+  }
+
   // hook behaviour
   wrapper.firstElementChild.addEventListener("change", refreshVisibility);
 }
@@ -38,6 +43,10 @@ function refreshVisibility() {
         flag.closest('[data-e2eid="mod-tile"], .file-row, li, article');
       if (card) card.classList.toggle("nmdh-hidden", shouldHide);
     });
+  // Save user choice to chrome.storage
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.set({ hideDownloadedMods: shouldHide });
+  }
 }
 
 // === Changelog functionality ==============================================
@@ -169,7 +178,9 @@ async function fetchModChangelog(modUrl) {
   return fetchPromise;
 }
 
-function setupChangelogHover() {
+function setupChangelogHover(options) {
+  // If disabled, do nothing
+  if (options && options.hoverChangelogs === false) return;
   const modElements = document.querySelectorAll('[data-e2eid="mod-tile"]');
   
   modElements.forEach(modElement => {
@@ -240,28 +251,42 @@ function setupChangelogHover() {
 
 // === boot ===================================================================
 function init() {
-  ensureToggleExists();
-  refreshVisibility();
-  
-  // Setup changelog hover after a short delay to ensure DOM is ready
-  setTimeout(() => {
-    setupChangelogHover();
-    
-    // Also setup on dynamic content changes (for infinite scroll, etc.) 
-    const observer = new MutationObserver((mutations) => {
-      const nodesAdded = mutations.some(mutation => 
-        mutation.addedNodes && mutation.addedNodes.length > 0
-      );
-      if (nodesAdded) {
-        setupChangelogHover();
-      }
+  // Get user options from chrome.storage, then run logic
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.get({ hideDownloadedMods: true, hoverChangelogs: true }, function(options) {
+      ensureToggleExists(options);
+      refreshVisibility();
+      setTimeout(() => {
+        setupChangelogHover(options);
+        // Also setup on dynamic content changes (for infinite scroll, etc.) 
+        const observer = new MutationObserver((mutations) => {
+          const nodesAdded = mutations.some(mutation => 
+            mutation.addedNodes && mutation.addedNodes.length > 0
+          );
+          if (nodesAdded) {
+            setupChangelogHover(options);
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }, 1000);
     });
-    
-    observer.observe(document.body, { 
-      childList: true, 
-      subtree: true 
-    });
-  }, 1000);
+  } else {
+    // fallback if chrome.storage is not available
+    ensureToggleExists({ hideDownloadedMods: true });
+    refreshVisibility();
+    setTimeout(() => {
+      setupChangelogHover({ hoverChangelogs: true });
+      const observer = new MutationObserver((mutations) => {
+        const nodesAdded = mutations.some(mutation => 
+          mutation.addedNodes && mutation.addedNodes.length > 0
+        );
+        if (nodesAdded) {
+          setupChangelogHover({ hoverChangelogs: true });
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }, 1000);
+  }
 }
 
 // initial run
