@@ -20,10 +20,12 @@ function saveOptions(e) {
 function restoreOptions() {
     chrome.storage.sync.get({
         hideDownloadedMods: true,
-        hoverChangelogs: true
+        hoverChangelogs: true,
+        infiniteScroll: true
     }, function(items) {
-        document.getElementById('hideDownloadedMods').checked = items.hideDownloadedMods;
-        document.getElementById('hoverChangelogs').checked = items.hoverChangelogs;
+        document.getElementById('hideDownloadedMods').checked = (typeof items.hideDownloadedMods === 'boolean') ? items.hideDownloadedMods : true;
+        document.getElementById('hoverChangelogs').checked = (typeof items.hoverChangelogs === 'boolean') ? items.hoverChangelogs : true;
+        document.getElementById('infiniteScroll').checked = (typeof items.infiniteScroll === 'boolean') ? items.infiniteScroll : true;
     });
 }
 
