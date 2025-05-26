@@ -15,7 +15,7 @@ node_modules/
 dist/
 build/
 *.zip
-package-extension.sh
+versions/
 
 # Editor directories and files
 .idea/

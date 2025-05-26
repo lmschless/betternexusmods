@@ -4,12 +4,38 @@
     <meta charset="UTF-8">
     <title>Extension Options</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        label { display: block; margin-bottom: 10px; }
-        button { margin-top: 15px; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f0f0f0;
+            color: #333333;
+        }
+        h2 {
+            color: #333333;
+        }
+        label { 
+            display: block; 
+            margin-bottom: 10px; 
+        }
+        button { 
+            margin-top: 15px; 
+            padding: 6px 12px;
+            background-color: #e0e0e0;
+            color: #333333;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #d0d0d0;
+        }
+        #status {
+            font-weight: bold;
+            color: #4caf50;
+        }
     </style>
 </head>
-<body>
+<body style="background-color: #f0f0f0; color: #333333;">
     <h2>Extension Options</h2>
     <form id="options-form">
         <label>
@@ -23,6 +49,10 @@
         <label>
             <input type="checkbox" id="infiniteScroll">
             Enable Infinite Scroll
+        </label>
+        <label>
+            <input type="checkbox" id="displayPostCount">
+            Display post count on mod page
         </label>
         <button type="submit">Save</button>
     </form>

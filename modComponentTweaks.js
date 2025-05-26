@@ -222,21 +222,62 @@ function setupModComponentObserver() {
 
 // === Initialize the module =================================================
 function initModComponentTweaks() {
-  // Check if we're on a page with mod components
-  if (document.querySelector('[data-e2eid="mod-tile"]')) {
-    setupModComponentObserver();
-  } else {
-    // If no mod tiles yet, wait for them to appear
-    const observer = new MutationObserver((mutations, obs) => {
+  // Get the displayPostCount option from storage
+  chrome.storage.sync.get({ displayPostCount: true }, function(items) {
+    // Only proceed if displayPostCount is enabled
+    if (items.displayPostCount) {
+      // Check if we're on a page with mod components
       if (document.querySelector('[data-e2eid="mod-tile"]')) {
         setupModComponentObserver();
-        obs.disconnect(); // Stop observing once we've found mod tiles
+      } else {
+        // If no mod tiles yet, wait for them to appear
+        const observer = new MutationObserver((mutations, obs) => {
+          if (document.querySelector('[data-e2eid="mod-tile"]')) {
+            setupModComponentObserver();
+            obs.disconnect(); // Stop observing once we've found mod tiles
+          }
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
       }
-    });
-    
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
+    }
+  });
 }
+
+// Function to remove post count elements from the page
+function removePostCountElements() {
+  // Find all post count elements that we've added
+  const postElements = document.querySelectorAll('[data-e2eid="mod-tile-posts"]');
+  postElements.forEach(element => {
+    // Get the parent span element that contains the entire post count component
+    const parentSpan = element.closest('span');
+    if (parentSpan) {
+      parentSpan.remove();
+    }
+  });
+  
+  // Reset the data-posts-added attribute on all mod tiles so they can be processed again if needed
+  const modTiles = document.querySelectorAll('[data-e2eid="mod-tile"][data-posts-added="true"]');
+  modTiles.forEach(tile => {
+    tile.removeAttribute('data-posts-added');
+  });
+}
+
+// Listen for changes to the storage
+chrome.storage.onChanged.addListener(function(changes, namespace) {
+  if (namespace === 'sync' && changes.displayPostCount) {
+    const newValue = changes.displayPostCount.newValue;
+    
+    // If the option was enabled, initialize the component
+    if (newValue === true) {
+      initModComponentTweaks();
+    } 
+    // If the option was disabled, remove post count elements
+    else if (newValue === false) {
+      removePostCountElements();
+    }
+  }
+});
 
 // Initialize when the document is ready
 if (document.readyState === 'loading') {
