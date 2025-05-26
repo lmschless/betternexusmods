@@ -18,7 +18,7 @@
     "content_scripts": [
       {
         "matches":["https://www.nexusmods.com/*", "https://*.nexusmods.com/*"],
-        "js": ["index.js", "infiniteScroll.js"],
+        "js": ["index.js", "infiniteScroll.js", "modComponentTweaks.js"],
         "css": ["styles.css"],
         "run_at": "document_idle"
       }
