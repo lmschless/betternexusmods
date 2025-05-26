@@ -1,3 +1,5 @@
+let modTileObserver = null;
+
 // === Mod Component Tweaks ===================================================
 // This file contains tweaks to enhance the mod component display
 
@@ -41,6 +43,7 @@ function addPostsCountToModComponent() {
           <span data-e2eid="mod-tile-posts">${postsCount}</span>
         </p>
       `;
+      postsElement.classList.add('mod-tile-posts-count-element'); // Add class for easy removal
       
       // Find the file size element - we want to insert our posts count before this
       // or after the downloads element if file size doesn't exist
@@ -188,7 +191,8 @@ function getFromPostsCache(url) {
 // === Observer to handle dynamically loaded content =========================
 function setupModComponentObserver() {
   // Create a mutation observer to watch for new mod tiles
-  const observer = new MutationObserver((mutations) => {
+  if (modTileObserver) modTileObserver.disconnect(); // Disconnect previous observer if any
+  modTileObserver = new MutationObserver((mutations) => {
     let shouldProcess = false;
     
     // Check if any relevant nodes were added
@@ -214,7 +218,7 @@ function setupModComponentObserver() {
   });
   
   // Start observing the document with the configured parameters
-  observer.observe(document.body, { childList: true, subtree: true });
+  if (modTileObserver) modTileObserver.observe(document.body, { childList: true, subtree: true });
   
   // Also run once on page load
   addPostsCountToModComponent();
@@ -246,21 +250,20 @@ function initModComponentTweaks() {
 
 // Function to remove post count elements from the page
 function removePostCountElements() {
-  // Find all post count elements that we've added
-  const postElements = document.querySelectorAll('[data-e2eid="mod-tile-posts"]');
-  postElements.forEach(element => {
-    // Get the parent span element that contains the entire post count component
-    const parentSpan = element.closest('span');
-    if (parentSpan) {
-      parentSpan.remove();
+  const modTiles = document.querySelectorAll('[data-e2eid="mod-tile"]');
+  modTiles.forEach(modTile => {
+    const postsElement = modTile.querySelector('.mod-tile-posts-count-element');
+    if (postsElement) {
+      postsElement.remove();
     }
+    modTile.removeAttribute('data-posts-added');
   });
-  
-  // Reset the data-posts-added attribute on all mod tiles so they can be processed again if needed
-  const modTiles = document.querySelectorAll('[data-e2eid="mod-tile"][data-posts-added="true"]');
-  modTiles.forEach(tile => {
-    tile.removeAttribute('data-posts-added');
-  });
+
+  if (modTileObserver) {
+    modTileObserver.disconnect();
+    modTileObserver = null;
+  }
+  console.log('Post count elements removed and observer disconnected.');
 }
 
 // Listen for changes to the storage
