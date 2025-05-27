@@ -1,4 +1,7 @@
 // Infinite Scroll for Nexus Mods main mods page
+let isInfiniteScrollEnabled = true; // Default to true, will be updated from storage
+let scrollListenerAttached = false;
+
 (function() {
     console.log('[Betternexusmods] infiniteScroll.js loaded', window.location.href);
     // Only run on the main mods listing page for any game
@@ -10,17 +13,18 @@
     // Check user option before enabling infinite scroll
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
         chrome.storage.sync.get({ infiniteScroll: true }, function(options) {
-            if (typeof options.infiniteScroll === 'undefined' || options.infiniteScroll === true) {
-                console.log('[Betternexusmods] Infinite Scroll ENABLED');
+            isInfiniteScrollEnabled = (typeof options.infiniteScroll === 'undefined') ? true : options.infiniteScroll;
+            if (isInfiniteScrollEnabled) {
+                console.log('[Betternexusmods] Infinite Scroll INITIALLY ENABLED');
                 initInfiniteScroll();
             } else {
-                console.log('[Betternexusmods] Infinite Scroll DISABLED');
+                console.log('[Betternexusmods] Infinite Scroll INITIALLY DISABLED');
             }
         });
     } else {
         // fallback: default enabled
-        console.log('[Betternexusmods] Infinite Scroll ENABLED (no chrome.storage)');
-        initInfiniteScroll();
+        console.log('[Betternexusmods] Infinite Scroll INITIALLY ENABLED (no chrome.storage)');
+        initInfiniteScroll(); // isInfiniteScrollEnabled remains true by default
     }
 
     let loading = false;
@@ -80,11 +84,41 @@
     }
 
     function initInfiniteScroll() {
-        // No need for nextPageUrl logic; just scroll and click next page button
-        window.addEventListener('scroll', onScroll);
-        console.log('[Betternexusmods] Infinite Scroll: Initialized (button click mode)');
+        if (isInfiniteScrollEnabled && !scrollListenerAttached) {
+            window.addEventListener('scroll', onScroll);
+            scrollListenerAttached = true;
+            console.log('[Betternexusmods] Infinite Scroll: Event listener ADDED');
+        } else if (!isInfiniteScrollEnabled && scrollListenerAttached) {
+            window.removeEventListener('scroll', onScroll);
+            scrollListenerAttached = false;
+            console.log('[Betternexusmods] Infinite Scroll: Event listener REMOVED');
+        }
     }
 
-    // Wait for DOM ready
-    document.addEventListener('DOMContentLoaded', initInfiniteScroll);
+    function disableInfiniteScroll() {
+        if (scrollListenerAttached) {
+            window.removeEventListener('scroll', onScroll);
+            scrollListenerAttached = false;
+            console.log('[Betternexusmods] Infinite Scroll: Event listener REMOVED due to option change');
+        }
+        // Remove loader if it exists
+        let loader = document.getElementById('nmdh-infinite-loader');
+        if (loader) loader.remove();
+    }
+
+    // Listen for changes from popup or options page
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+        chrome.storage.onChanged.addListener(function(changes, namespace) {
+            if (namespace === 'sync' && changes.infiniteScroll) {
+                isInfiniteScrollEnabled = changes.infiniteScroll.newValue;
+                if (isInfiniteScrollEnabled) {
+                    console.log('[Betternexusmods] Infinite Scroll turned ON by user');
+                    initInfiniteScroll(); // This will add the listener if not already present
+                } else {
+                    console.log('[Betternexusmods] Infinite Scroll turned OFF by user');
+                    disableInfiniteScroll(); // This will remove the listener
+                }
+            }
+        });
+    }
 })();

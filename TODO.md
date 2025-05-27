@@ -10,6 +10,11 @@
   - [ ] Add test case for dynamic content addition (MutationObserver for new mod tiles).
 - [ ] Investigate and implement other planned mod component tweaks.
 
+### Feature Toggles
+- [x] Ensure 'hide downloaded mods' option properly disables when not enabled.
+- [x] Ensure 'infinite scroll' option properly disables when not enabled.
+- [x] Ensure 'changelog' option properly disables when not enabled.
+
 ## Medium Priority
 - [ ] Refactor `modComponentTweaks.js` to be more modular (e.g., using ES modules) to simplify testing and improve organization.
 - [ ] Review and improve caching mechanism for post counts (e.g., consider background script for fetching if content script limitations are hit).
