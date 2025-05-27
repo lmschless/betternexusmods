@@ -6,11 +6,11 @@ set -e
 
 EXT_NAME="betternexusmods"
 PACKAGE_DIR="${EXT_NAME}-package"
-VERSIONS_DIR="versions"
+VERSIONS_DIR="dist" # Changed from versions to dist
 # ZIP_NAME will be defined after the version is read from manifest.json
 
 # Read and increment version from manifest.json
-MANIFEST_FILE="manifest.json"
+MANIFEST_FILE="src/manifest.json" # Path updated to src/
 
 if ! command -v jq &> /dev/null
 then
@@ -38,6 +38,7 @@ NEW_VERSION="${major}.${minor}.${new_patch}"
 
 # Update manifest.json with the new version
 # Create a temporary file for jq output to avoid issues with in-place editing on some systems
+# Ensure paths are correct for jq operation relative to script execution (project root)
 tmp_manifest=$(mktemp)
 jq --arg new_version "$NEW_VERSION" '.version = $new_version' "$MANIFEST_FILE" > "$tmp_manifest" && mv "$tmp_manifest" "$MANIFEST_FILE"
 
@@ -45,28 +46,18 @@ echo "Updated version in $MANIFEST_FILE to $NEW_VERSION"
 
 ZIP_NAME="${EXT_NAME}-v${NEW_VERSION}.zip"
 
-# Clean up any previous package, old unversioned zip, and ensure versions directory exists
-rm -rf "$PACKAGE_DIR"
+# Clean up any previous package, old unversioned zip, and ensure dist directory exists
+rm -rf "$PACKAGE_DIR" # This temporary package dir is no longer strictly needed if zipping directly from src
 rm -f "${EXT_NAME}.zip" # Remove old unversioned zip from root, if it exists
-mkdir -p "$VERSIONS_DIR" # Ensure versions directory exists
-rm -f "${VERSIONS_DIR}/${ZIP_NAME}" # Remove new versioned zip from versions/ if it exists from a previous run
+mkdir -p "$VERSIONS_DIR" # Ensure dist directory exists (VERSIONS_DIR is now 'dist')
 
-# Create package directory
-mkdir "$PACKAGE_DIR"
+# Create the zip file directly from the src directory
+# The 'cd src' ensures paths in the zip are relative to src/
+# Output path for zip is adjusted to be ../dist/
+(cd src && zip -r "../$VERSIONS_DIR/$ZIP_NAME" . -x ".*" -x "__MACOSX" -x "*.DS_Store")
 
-# Copy extension files (excluding .git, .DS_Store, and this script)
-shopt -s extglob
-cp -r !(package-extension.sh|.git|.gitignore|.DS_Store|${PACKAGE_DIR}|${ZIP_NAME}) "$PACKAGE_DIR"/
-
-# Remove any .DS_Store files from package
-find "$PACKAGE_DIR" -name '.DS_Store' -type f -delete
-
-# Zip the package into the versions directory
-cd "$PACKAGE_DIR"
-zip -r "../${VERSIONS_DIR}/${ZIP_NAME}" .
-cd ..
-
-# Cleanup package directory
-rm -rf "$PACKAGE_DIR"
+# Note: The explicit cp to PACKAGE_DIR and zipping from there has been removed.
+# We now zip directly from the 'src' directory to ensure correct paths within the archive.
+# Exclusions within the zip command should target files relative to the 'src' directory if needed.
 
 echo "✅ Extension packaged as ${VERSIONS_DIR}/${ZIP_NAME}. Upload this zip to the Chrome Web Store."

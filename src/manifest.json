@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Betternexusmods",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Enhance Nexus Mods browsing experience",
   "permissions": [
     "storage"
