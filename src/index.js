@@ -13,10 +13,19 @@ function ensureToggleExists(options) {
   const toolbar = getToolbar();
   if (!toolbar) return; // toolbar not yet in DOM
 
-  if (document.querySelector("#nmdh-toggle")) return; // already added
+  const existingToggle = document.querySelector("#nmdh-toggle");
+
+  if (window.location.href.includes('search')) {
+    if (existingToggle) {
+      existingToggle.remove();
+    }
+    return; // Do not add toggle on search pages
+  }
+
+  if (existingToggle) return; // Already added and not a search page
 
   // -------------------------------------------------------------------------
-  // build the checkbox+label
+  // build the checkbox+label (only if not a search page and toggle doesn't exist)
   const wrapper = document.createElement("label");
   wrapper.id = "nmdh-toggle";
   wrapper.className = "nmdh-label"; // styled in CSS
@@ -38,19 +47,29 @@ function ensureToggleExists(options) {
 }
 
 function refreshVisibility() {
-  const shouldHide =
-    document.querySelector("#nmdh-checkbox")?.checked ?? true;
+  let shouldHide;
+  const checkbox = document.querySelector("#nmdh-checkbox");
+
+  if (window.location.href.includes('search')) {
+    shouldHide = false; // Force mods to be visible on search pages
+  } else {
+    // If checkbox exists, use its state, otherwise default (e.g. true, or could be based on initial options)
+    shouldHide = checkbox?.checked ?? nmdh_currentOptions.hideDownloadedMods; 
+  }
 
   document
     .querySelectorAll('[data-e2eid="mod-tile-downloaded"]')
     .forEach(flag => {
       const card =
         flag.closest('[data-e2eid="mod-tile"], .file-row, li, article');
-      if (card) card.classList.toggle("nmdh-hidden", shouldHide);
+      if (card) {
+        card.classList.toggle("nmdh-hidden", shouldHide);
+      }
     });
-  // Save user choice to chrome.storage
-  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.set({ hideDownloadedMods: shouldHide });
+
+  // Save user choice to chrome.storage only if the checkbox exists
+  if (checkbox && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.set({ hideDownloadedMods: checkbox.checked });
   }
 }
 
