@@ -46,7 +46,7 @@ describe('Mod Component Tweaks', () => {
   test('should add post counts when displayPostCount is true on initial load', async () => {
     // Load and execute the script. initModComponentTweaks() is called at its end.
     // jest.resetModules() in afterEach ensures this is a fresh load.
-    require('./modComponentTweaks.js');
+    require('../src/modComponentTweaks.js');
 
     const modTile = document.querySelector('[data-e2eid="mod-tile"]');
     const modTileFooter = modTile.querySelector('.bg-surface-high.mt-auto');

@@ -9,4 +9,4 @@ This version introduces several new features to enhance your Nexus Mods browsing
 *   **Infinite Scrolling:** Seamlessly load more mods as you scroll down on mod listing pages, eliminating the need for pagination.
 *   **Display Post Count:** Shows the number of posts (comments) directly on the mod tile or mod page, giving you a quick insight into community discussion.
 
-We hope you enjoy these new improvements! Please report any issues or provide feedback through the extension's support channels.
+We hope you enjoy these new improvements! Please report any issues or provide feedback.
