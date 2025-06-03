@@ -186,10 +186,13 @@ async function fetchPostsCount(modUrl) {
     if (!modIdMatch || !modIdMatch[1]) return null;
     const modId = modIdMatch[1];
     
-    // Look for post count in the existing page elements related to this modId
-    const modPageTile = document.querySelector(`[data-e2eid="mod-tile"][href*="/mods/${modId}"]`);
-    
-    if (modPageTile) {
+    // Look for a mod tile containing a link to this modId.
+    // We search for an anchor with the desired href inside any mod tile,
+    // then walk back up to ensure we get the tile element itself.
+    const modPageAnchor = document.querySelector(`[data-e2eid="mod-tile"] a[href*="/mods/${modId}"]`);
+    const modPageTile = modPageAnchor ? modPageAnchor.closest('[data-e2eid="mod-tile"]') : null;
+
+    if (modPageTile && modPageTile.matches('[data-e2eid="mod-tile"]')) {
       // This part is highly dependent on Nexus Mods' actual page structure for displaying post counts
       // It's a placeholder for where real extraction logic would go.
       const postsDataElement = modPageTile.querySelector('[data-nexus-posts-count]'); // Hypothetical selector
