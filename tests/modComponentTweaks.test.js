@@ -75,7 +75,28 @@ describe('Mod Component Tweaks', () => {
     expect(chrome.storage.sync.get).toHaveBeenCalled(); // Verify storage was checked
   });
 
-  // TODO: Add test for when displayPostCount is false on initial load
+  test('should not add post counts when displayPostCount is false on initial load', async () => {
+    chrome.storage.sync.get.mockImplementationOnce((defaults, callback) => {
+      const result = { ...defaults, displayPostCount: false };
+      if (typeof callback === 'function') {
+        callback(result);
+      }
+      return Promise.resolve(result);
+    });
+
+    require('../src/modComponentTweaks.js');
+
+    const modTile = document.querySelector('[data-e2eid="mod-tile"]');
+
+    await waitFor(() => {
+      const postElement = modTile.querySelector('.mod-tile-posts-count-element');
+      expect(postElement).toBeNull();
+    });
+
+    expect(modTile.hasAttribute('data-posts-added')).toBe(false);
+    expect(chrome.storage.sync.get).toHaveBeenCalled();
+  });
+
   // TODO: Add test for toggling displayPostCount from true to false
   // TODO: Add test for toggling displayPostCount from false to true
   // TODO: Add test for dynamic content addition (MutationObserver)
