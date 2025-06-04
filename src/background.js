@@ -3,6 +3,32 @@ const POSTS_CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 1 day
 // Simple in-memory cache to avoid hitting chrome.storage write limits
 const postsCache = {};
 
+// === Request queue to limit concurrent fetches ==============================
+const MAX_ACTIVE_POST_REQUESTS = 3;
+let activePostRequests = 0;
+const postRequestQueue = [];
+
+function processPostQueue() {
+  if (activePostRequests >= MAX_ACTIVE_POST_REQUESTS) return;
+  const next = postRequestQueue.shift();
+  if (!next) return;
+
+  activePostRequests++;
+  fetchPostCount(next.url)
+    .then(data => next.resolve(data))
+    .catch(err => next.reject(err))
+    .finally(() => {
+      activePostRequests--;
+      processPostQueue();
+    });
+}
+
+function queueFetchPostCount(url) {
+  return new Promise((resolve, reject) => {
+    postRequestQueue.push({ url, resolve, reject });
+    processPostQueue();
+  });
+}
 purgeExpiredStorage();
 
 chrome.runtime.onMessage.addListener((msg, sender, respond) => {
@@ -20,16 +46,6 @@ async function handlePostCount(url) {
     return cached.data;
   }
 
-  const storageValue = await readPostCountFromStorage(url);
-  if (storageValue !== null) {
-    postsCache[url] = {
-      data: storageValue,
-      expiry: Date.now() + POSTS_CACHE_EXPIRY_MS,
-    };
-    return storageValue;
-  }
-
-  const data = await fetchPostCount(url);
   postsCache[url] = { data, expiry: Date.now() + POSTS_CACHE_EXPIRY_MS };
   writePostCountToStorage(url, data, Date.now() + POSTS_CACHE_EXPIRY_MS);
   return data;
