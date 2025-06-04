@@ -1,4 +1,4 @@
-// modComponentTweaks.test.js
+// posts.test.js
 const { waitFor } = require('@testing-library/dom');
 
 // HTML structure for a mod tile
@@ -12,7 +12,7 @@ const MOD_TILE_HTML = `
   </div>
 `;
 
-describe('Mod Component Tweaks', () => {
+describe('Posts feature', () => {
   beforeEach(() => {
     // Set up the DOM
     document.body.innerHTML = MOD_TILE_HTML;
@@ -46,7 +46,7 @@ describe('Mod Component Tweaks', () => {
   test('should add post counts when displayPostCount is true on initial load', async () => {
     // Load and execute the script. initModComponentTweaks() is called at its end.
     // jest.resetModules() in afterEach ensures this is a fresh load.
-    require('../src/modComponentTweaks.js');
+    require('../src/posts.js');
 
     const modTile = document.querySelector('[data-e2eid="mod-tile"]');
     const modTileFooter = modTile.querySelector('.bg-surface-high.mt-auto');
@@ -84,7 +84,7 @@ describe('Mod Component Tweaks', () => {
       return Promise.resolve(result);
     });
 
-    require('../src/modComponentTweaks.js');
+    require('../src/posts.js');
 
     const modTile = document.querySelector('[data-e2eid="mod-tile"]');
 
@@ -95,6 +95,18 @@ describe('Mod Component Tweaks', () => {
 
     expect(modTile.hasAttribute('data-posts-added')).toBe(false);
     expect(chrome.storage.sync.get).toHaveBeenCalled();
+  });
+
+  test('limits fetching posts to first 20 mod tiles', async () => {
+    const tiles = new Array(25).fill(MOD_TILE_HTML).join('');
+    document.body.innerHTML = tiles;
+
+    require('../src/posts.js');
+
+    await waitFor(() => {
+      const posts = document.querySelectorAll('.mod-tile-posts-count-element');
+      expect(posts.length).toBe(20);
+    });
   });
 
   // TODO: Add test for toggling displayPostCount from true to false

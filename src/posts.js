@@ -1,4 +1,6 @@
 let modTileObserver = null;
+const MAX_POST_FETCHES = 20;
+let postsFetched = 0;
 
 // === Mod Component Tweaks ===================================================
 // This file contains tweaks to enhance the mod component display
@@ -7,15 +9,21 @@ let modTileObserver = null;
  * Adds the number of posts to the mod component footer
  * Matches the style of other elements (endorsements, downloads, size)
  */
-function addPostsCountToModComponent() {
+async function addPostsCountToModComponent() {
   if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
     console.log('MOD_TWEAKS_DEBUG: addPostsCountToModComponent called');
   }
   
   // Find all mod tiles on the page
   const modTiles = document.querySelectorAll('[data-e2eid="mod-tile"]');
-  
-  modTiles.forEach(async (modTile) => {
+
+  for (const modTile of modTiles) {
+    if (postsFetched >= MAX_POST_FETCHES) {
+      break;
+    }
+    if (modTile.getAttribute('data-posts-added') === 'true') {
+      continue;
+    }
     // Initial 'data-posts-added' check and setAttribute have been moved and integrated later in the logic:
     // 1. A check for an existing posts element is done after fetching postsCount.
     // 2. 'data-posts-added' attribute is set only after successful DOM insertion of the new postsElement.
@@ -41,6 +49,7 @@ function addPostsCountToModComponent() {
     
     try {
       // Fetch the mod page to get the posts count
+      postsFetched++;
       const postsCount = await fetchPostsCount(modUrl);
       if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
         console.log(`MOD_TWEAKS_DEBUG: Received postsCount: ${postsCount} for modUrl: ${modUrl}`);
@@ -160,7 +169,7 @@ function addPostsCountToModComponent() {
     } catch (error) {
       console.error('Error adding posts count:', error);
     }
-  });
+  }
 }
 
 /**
