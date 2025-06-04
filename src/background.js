@@ -45,7 +45,13 @@ async function handlePostCount(url) {
   if (cached && Date.now() < cached.expiry) {
     return cached.data;
   }
+  const stored = await readPostCountFromStorage(url);
+  if (stored) {
+    postsCache[url] = { data: stored, expiry: Date.now() + POSTS_CACHE_EXPIRY_MS };
+    return stored;
+  }
 
+  const data = await queueFetchPostCount(url);
   postsCache[url] = { data, expiry: Date.now() + POSTS_CACHE_EXPIRY_MS };
   writePostCountToStorage(url, data, Date.now() + POSTS_CACHE_EXPIRY_MS);
   return data;
