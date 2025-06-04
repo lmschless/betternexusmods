@@ -357,4 +357,4 @@ if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged)
 const container = document.querySelector("main") || document.body;
 const obs = new MutationObserver(init);
 if (container) obs.observe(container, { childList: true, subtree: true });
-})();
+})(window);
