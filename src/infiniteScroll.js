@@ -1,6 +1,7 @@
 // Infinite Scroll for Nexus Mods main mods page
 let isInfiniteScrollEnabled = true; // Default to true, will be updated from storage
 let observer = null;
+let sentinel = null; // element used as the scroll sentinel
 
 (function() {
     console.log('[Betternexusmods] infiniteScroll.js loaded', window.location.href);

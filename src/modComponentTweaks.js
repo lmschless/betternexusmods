@@ -221,22 +221,25 @@ function setupModComponentObserver() {
 function initModComponentTweaks() {
   // Get the displayPostCount option from storage
   chrome.storage.sync.get({ displayPostCount: true }, function(items) {
+    // Clean up any previous observers/elements when disabled
+    if (!items.displayPostCount) {
+      removePostCountElements();
+      return;
+    }
+
     // Only proceed if displayPostCount is enabled
-    if (items.displayPostCount) {
-      // Check if we're on a page with mod components
-      if (document.querySelector('[data-e2eid="mod-tile"]')) {
-        setupModComponentObserver();
-      } else {
-        // If no mod tiles yet, wait for them to appear
-        const observer = new MutationObserver((mutations, obs) => {
-          if (document.querySelector('[data-e2eid="mod-tile"]')) {
-            setupModComponentObserver();
-            obs.disconnect(); // Stop observing once we've found mod tiles
-          }
-        });
-        
-        observer.observe(document.body, { childList: true, subtree: true });
-      }
+    if (document.querySelector('[data-e2eid="mod-tile"]')) {
+      setupModComponentObserver();
+    } else {
+      // If no mod tiles yet, wait for them to appear
+      const observer = new MutationObserver((mutations, obs) => {
+        if (document.querySelector('[data-e2eid="mod-tile"]')) {
+          setupModComponentObserver();
+          obs.disconnect(); // Stop observing once we've found mod tiles
+        }
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true });
     }
   });
 }
