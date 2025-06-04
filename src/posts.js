@@ -1,4 +1,5 @@
 let modTileObserver = null;
+let modTileIntersectionObserver = null;
 const MAX_POST_FETCHES = 20;
 let postsFetched = 0;
 
@@ -6,68 +7,52 @@ let postsFetched = 0;
 // This file contains tweaks to enhance the mod component display
 
 /**
- * Adds the number of posts to the mod component footer
- * Matches the style of other elements (endorsements, downloads, size)
+ * Fetch posts count for a single mod tile and inject into the DOM
+ * @param {Element} modTile
  */
-async function addPostsCountToModComponent() {
-  if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-    console.log('MOD_TWEAKS_DEBUG: addPostsCountToModComponent called');
+async function processModTile(modTile) {
+  if (postsFetched >= MAX_POST_FETCHES) {
+    return;
   }
-  
-  // Find all mod tiles on the page
-  const modTiles = document.querySelectorAll('[data-e2eid="mod-tile"]');
+  if (modTile.getAttribute('data-posts-added') === 'true') {
+    return;
+  }
 
-  for (const modTile of modTiles) {
-    if (postsFetched >= MAX_POST_FETCHES) {
-      break;
+  const footer = modTile.querySelector('.bg-surface-high.mt-auto.flex.min-h-8.items-center.gap-x-4.rounded-b.px-3');
+  if (!footer) {
+    if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+      console.log(`MOD_TWEAKS_DEBUG: Footer not found in modTile: ${modTile.dataset.modId}`);
     }
-    if (modTile.getAttribute('data-posts-added') === 'true') {
-      continue;
+    return;
+  }
+  if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+    console.log('MOD_TWEAKS_DEBUG: Footer found. Initial innerHTML:', footer.innerHTML.trim().replace(/\s+/g, ' '));
+  }
+
+  const modLink = modTile.querySelector('a[href*="/mods/"]');
+  if (!modLink) return;
+
+  const modUrl = modLink.href;
+  if (!modUrl) return;
+
+  try {
+    postsFetched++;
+    const postsCount = await fetchPostsCount(modUrl);
+    if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+      console.log(`MOD_TWEAKS_DEBUG: Received postsCount: ${postsCount} for modUrl: ${modUrl}`);
     }
-    // Initial 'data-posts-added' check and setAttribute have been moved and integrated later in the logic:
-    // 1. A check for an existing posts element is done after fetching postsCount.
-    // 2. 'data-posts-added' attribute is set only after successful DOM insertion of the new postsElement.
-    
-    // Find the footer where we'll add the posts count
-    const footer = modTile.querySelector('.bg-surface-high.mt-auto.flex.min-h-8.items-center.gap-x-4.rounded-b.px-3');
-    if (!footer) {
-      if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-        console.log(`MOD_TWEAKS_DEBUG: Footer not found in modTile: ${modTile.dataset.modId}`);
-      }
+    if (!postsCount) {
+      if ((typeof global !== 'undefined' && global.isTestEnvironment)) console.log(`MOD_TWEAKS_DEBUG: postsCount is null or empty, skipping DOM manipulation for ${modUrl}`);
       return;
     }
-    if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-      console.log('MOD_TWEAKS_DEBUG: Footer found. Initial innerHTML:', footer.innerHTML.trim().replace(/\s+/g, ' '));
+    if (footer.querySelector('[data-e2eid="mod-tile-posts"]')) {
+      if ((typeof global !== 'undefined' && global.isTestEnvironment)) console.log(`MOD_TWEAKS_DEBUG: Posts element already found in footer for ${modUrl}, skipping.`);
+      modTile.setAttribute('data-posts-added', 'true');
+      return;
     }
-    
-    // Get the mod URL from the tile
-    const modLink = modTile.querySelector('a[href*="/mods/"]');
-    if (!modLink) return;
-    
-    const modUrl = modLink.href;
-    if (!modUrl) return;
-    
-    try {
-      // Fetch the mod page to get the posts count
-      postsFetched++;
-      const postsCount = await fetchPostsCount(modUrl);
-      if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-        console.log(`MOD_TWEAKS_DEBUG: Received postsCount: ${postsCount} for modUrl: ${modUrl}`);
-      }
-      if (!postsCount) {
-        if ((typeof global !== 'undefined' && global.isTestEnvironment)) console.log(`MOD_TWEAKS_DEBUG: postsCount is null or empty, skipping DOM manipulation for ${modUrl}`);
-        return;
-      }
-      // Check if posts element was already added (e.g. by a previous run before an async gap)
-      if (footer.querySelector('[data-e2eid="mod-tile-posts"]')) {
-        if ((typeof global !== 'undefined' && global.isTestEnvironment)) console.log(`MOD_TWEAKS_DEBUG: Posts element already found in footer for ${modUrl}, skipping.`);
-        modTile.setAttribute('data-posts-added', 'true'); // Ensure it's marked if already present
-        return;
-      }
-      
-      // Create the posts count element
-      const postsElement = document.createElement('span');
-      postsElement.innerHTML = `
+
+    const postsElement = document.createElement('span');
+    postsElement.innerHTML = `
         <p class="typography-body-sm text-neutral-moderate flex items-center gap-x-1 leading-4">
           <svg viewBox="0 0 24 24" role="presentation" class="shrink-0" style="width: 1rem; height: 1rem;">
             <path d="M17,12V3A1,1 0 0,0 16,2H3A1,1 0 0,0 2,3V17L6,13H16A1,1 0 0,0 17,12M21,6H19V15H6V17A1,1 0 0,0 7,18H18L22,22V7A1,1 0 0,0 21,6Z" style="fill: currentcolor;"></path>
@@ -76,100 +61,129 @@ async function addPostsCountToModComponent() {
           <span data-e2eid="mod-tile-posts">${postsCount}</span>
         </p>
       `;
-      postsElement.classList.add('mod-tile-posts-count-element'); // Add class for easy removal
-      if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-        console.log('MOD_TWEAKS_DEBUG: Created postsElement:', postsElement.outerHTML);
-      }
-      
-      // Find the file size element - we want to insert our posts count before this
-      // or after the downloads element if file size doesn't exist
-      // Make sure we're only looking for direct children of the footer
-      const footerChildren = Array.from(footer.children);
-      
-      // Find elements by their data attributes within the direct children
-      const fileSizeSpan = footerChildren.find(child => 
-        child.matches && child.matches('[data-e2eid="mod-tile-file-size"]')
-      );
-      
-      const downloadsSpan = footerChildren.find(child => 
-        child.matches && child.matches('[data-e2eid="mod-tile-downloads"]')
-      );
-      
-      if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-        console.log('MOD_TWEAKS_DEBUG: fileSizeSpan found:', !!fileSizeSpan, fileSizeSpan ? fileSizeSpan.outerHTML : 'N/A');
-        console.log('MOD_TWEAKS_DEBUG: downloadsSpan found:', !!downloadsSpan, downloadsSpan ? downloadsSpan.outerHTML : 'N/A');
-      }
-      
-      // Safely insert the element
-      let inserted = false;
-      if ((typeof global !== 'undefined' && global.isTestEnvironment)) console.log('MOD_TWEAKS_DEBUG: Attempting to insert/append postsElement...');
-      
-      try {
-        if (downloadsSpan && footer.contains(downloadsSpan)) {
-          // Insert after the downloads element
-          const nextSibling = downloadsSpan.nextSibling;
-          if (nextSibling && footer.contains(nextSibling)) {
-            footer.insertBefore(postsElement, nextSibling);
-            inserted = true;
-            if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-              console.log('MOD_TWEAKS_DEBUG: Inserted postsElement after downloadsSpan (before its nextSibling).');
-              console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after insertBefore(nextSibling):', footer.innerHTML.trim().replace(/\s+/g, ' '));
-            }
-          } else {
-            // If downloadsSpan is the last child, append postsElement after it
-            footer.appendChild(postsElement);
-            inserted = true;
-            if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-              console.log('MOD_TWEAKS_DEBUG: Appended postsElement after downloadsSpan (as last child).');
-              console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after appendChild (after downloadsSpan):', footer.innerHTML.trim().replace(/\s+/g, ' '));
-            }
-          }
-        } else if (fileSizeSpan && footer.contains(fileSizeSpan)) {
-          // Insert before the file size element (if downloadsSpan was not found)
-          footer.insertBefore(postsElement, fileSizeSpan);
+    postsElement.classList.add('mod-tile-posts-count-element');
+    if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+      console.log('MOD_TWEAKS_DEBUG: Created postsElement:', postsElement.outerHTML);
+    }
+
+    const footerChildren = Array.from(footer.children);
+
+    const fileSizeSpan = footerChildren.find(child =>
+      child.matches && child.matches('[data-e2eid="mod-tile-file-size"]')
+    );
+
+    const downloadsSpan = footerChildren.find(child =>
+      child.matches && child.matches('[data-e2eid="mod-tile-downloads"]')
+    );
+
+    if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+      console.log('MOD_TWEAKS_DEBUG: fileSizeSpan found:', !!fileSizeSpan, fileSizeSpan ? fileSizeSpan.outerHTML : 'N/A');
+      console.log('MOD_TWEAKS_DEBUG: downloadsSpan found:', !!downloadsSpan, downloadsSpan ? downloadsSpan.outerHTML : 'N/A');
+    }
+
+    let inserted = false;
+    if ((typeof global !== 'undefined' && global.isTestEnvironment)) console.log('MOD_TWEAKS_DEBUG: Attempting to insert/append postsElement...');
+
+    try {
+      if (downloadsSpan && footer.contains(downloadsSpan)) {
+        const nextSibling = downloadsSpan.nextSibling;
+        if (nextSibling && footer.contains(nextSibling)) {
+          footer.insertBefore(postsElement, nextSibling);
           inserted = true;
           if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-            console.log('MOD_TWEAKS_DEBUG: Inserted postsElement before fileSizeSpan.');
-            console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after insertBefore(fileSizeSpan):', footer.innerHTML.trim().replace(/\s+/g, ' '));
+            console.log('MOD_TWEAKS_DEBUG: Inserted postsElement after downloadsSpan (before its nextSibling).');
+            console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after insertBefore(nextSibling):', footer.innerHTML.trim().replace(/\s+/g, ' '));
           }
         } else {
-          // Fallback: just append to the footer (if neither downloadsSpan nor fileSizeSpan was found)
           footer.appendChild(postsElement);
           inserted = true;
           if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-            console.log('MOD_TWEAKS_DEBUG: Appended postsElement as fallback.');
-            console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after appendChild (fallback):', footer.innerHTML.trim().replace(/\s+/g, ' '));
+            console.log('MOD_TWEAKS_DEBUG: Appended postsElement after downloadsSpan (as last child).');
+            console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after appendChild(after downloadsSpan):', footer.innerHTML.trim().replace(/\s+/g, ' '));
           }
         }
-      } catch (insertError) {
-        console.warn('DOM insertion error, falling back to append:', insertError);
-        // Ultimate fallback - just append to the end
-        try {
-          footer.appendChild(postsElement);
-          inserted = true; // Mark as inserted even in ultimate fallback
-          if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-            console.log('MOD_TWEAKS_DEBUG: Appended postsElement as ultimate fallback.');
-            console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after appendChild (ultimate fallback):', footer.innerHTML.trim().replace(/\s+/g, ' '));
-          }
-        } catch (appendError) {
-          console.error('Failed to append element:', appendError);
-        }
-      }
-
-      if (inserted) {
-        modTile.setAttribute('data-posts-added', 'true');
+      } else if (fileSizeSpan && footer.contains(fileSizeSpan)) {
+        footer.insertBefore(postsElement, fileSizeSpan);
+        inserted = true;
         if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-          console.log(`MOD_TWEAKS_DEBUG: Successfully inserted posts and set data-posts-added for modTile: ${modTile.dataset.modId}`);
+          console.log('MOD_TWEAKS_DEBUG: Inserted postsElement before fileSizeSpan.');
+          console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after insertBefore(fileSizeSpan):', footer.innerHTML.trim().replace(/\s+/g, ' '));
         }
       } else {
+        footer.appendChild(postsElement);
+        inserted = true;
         if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
-          console.log(`MOD_TWEAKS_DEBUG: postsElement was NOT inserted for modTile: ${modTile.dataset.modId}`);
+          console.log('MOD_TWEAKS_DEBUG: Appended postsElement as fallback.');
+          console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after appendChild (fallback):', footer.innerHTML.trim().replace(/\s+/g, ' '));
         }
       }
-    } catch (error) {
-      console.error('Error adding posts count:', error);
+    } catch (insertError) {
+      console.warn('DOM insertion error, falling back to append:', insertError);
+      try {
+        footer.appendChild(postsElement);
+        inserted = true;
+        if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+          console.log('MOD_TWEAKS_DEBUG: Appended postsElement as ultimate fallback.');
+          console.log('MOD_TWEAKS_DEBUG: Footer innerHTML after appendChild (ultimate fallback):', footer.innerHTML.trim().replace(/\s+/g, ' '));
+        }
+      } catch (appendError) {
+        console.error('Failed to append element:', appendError);
+      }
     }
+
+    if (inserted) {
+      modTile.setAttribute('data-posts-added', 'true');
+      if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+        console.log(`MOD_TWEAKS_DEBUG: Successfully inserted posts and set data-posts-added for modTile: ${modTile.dataset.modId}`);
+      }
+    } else {
+      if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+        console.log(`MOD_TWEAKS_DEBUG: postsElement was NOT inserted for modTile: ${modTile.dataset.modId}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error adding posts count:', error);
   }
+}
+
+/**
+ * Adds the number of posts to the mod component footer
+ * Matches the style of other elements (endorsements, downloads, size)
+ */
+function addPostsCountToModComponent() {
+  if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+    console.log('MOD_TWEAKS_DEBUG: addPostsCountToModComponent called');
+  }
+
+  const modTiles = document.querySelectorAll('[data-e2eid="mod-tile"]');
+
+  if ((typeof global !== 'undefined' && global.isTestEnvironment)) {
+    modTiles.forEach(modTile => {
+      if (!modTile.hasAttribute('data-posts-added')) {
+        processModTile(modTile);
+      }
+    });
+    return;
+  }
+
+  if (!modTileIntersectionObserver) {
+    modTileIntersectionObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          observer.unobserve(entry.target);
+          processModTile(entry.target);
+        }
+      });
+    }, { rootMargin: '100px' });
+  }
+
+  modTiles.forEach(modTile => {
+    if (postsFetched >= MAX_POST_FETCHES) return;
+    if (!modTile.hasAttribute('data-posts-added') && !modTile.hasAttribute('data-posts-observed')) {
+      modTile.setAttribute('data-posts-observed', 'true');
+      modTileIntersectionObserver.observe(modTile);
+    }
+  });
 }
 
 /**
@@ -267,6 +281,10 @@ function removePostCountElements() {
   if (modTileObserver) {
     modTileObserver.disconnect();
     modTileObserver = null;
+  }
+  if (modTileIntersectionObserver) {
+    modTileIntersectionObserver.disconnect();
+    modTileIntersectionObserver = null;
   }
   console.log('Post count elements removed and observer disconnected.');
 }
