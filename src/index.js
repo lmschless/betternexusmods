@@ -6,6 +6,43 @@
     hoverChangelogs: true
 };
 
+// Gracefully handle storage access in case the extension context is gone
+function safeStorageGet(defaults, cb) {
+  try {
+    chrome.storage.sync.get(defaults, items => {
+      if (chrome.runtime && chrome.runtime.lastError) {
+        console.error('chrome.storage get error:', chrome.runtime.lastError);
+        cb(defaults);
+      } else {
+        cb(items);
+      }
+    });
+  } catch (err) {
+    console.error('chrome.storage get exception:', err);
+    cb(defaults);
+  }
+}
+
+function safeStorageSet(data) {
+  try {
+    chrome.storage.sync.set(data, () => {
+      if (chrome.runtime && chrome.runtime.lastError) {
+        console.error('chrome.storage set error:', chrome.runtime.lastError);
+      }
+    });
+  } catch (err) {
+    console.error('chrome.storage set exception:', err);
+  }
+}
+
+function safeAddStorageListener(listener) {
+  try {
+    chrome.storage.onChanged.addListener(listener);
+  } catch (err) {
+    console.error('chrome.storage.onChanged exception:', err);
+  }
+}
+
 // === helpers ================================================================
 function getToolbar() {
   // first toolbar row with left/right buttons
@@ -70,9 +107,13 @@ function refreshVisibility() {
       }
     });
 
-  // Save user choice to chrome.storage only if the checkbox exists
+  // Save user choice only when it actually changes to avoid hitting write limits
   if (checkbox && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.set({ hideDownloadedMods: checkbox.checked });
+    const newValue = checkbox.checked;
+    if (currentOptions.hideDownloadedMods !== newValue) {
+      safeStorageSet({ hideDownloadedMods: newValue });
+      currentOptions.hideDownloadedMods = newValue;
+    }
   }
 }
 
@@ -284,7 +325,7 @@ function setupChangelogHover(options) {
 function init() {
   // Get user options from chrome.storage, then run logic
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get({ hideDownloadedMods: true, hoverChangelogs: true }, function(items) {
+    safeStorageGet({ hideDownloadedMods: true, hoverChangelogs: true }, function(items) {
       betterNexusMods.options = currentOptions = items; // Store retrieved options
       ensureToggleExists(currentOptions);
       refreshVisibility(); // refreshVisibility reads from the DOM checkbox, which ensureToggleExists sets based on currentOptions
@@ -328,7 +369,7 @@ init();
 
 // Listen for changes from popup or options page
 if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
-    chrome.storage.onChanged.addListener(function(changes, namespace) {
+    safeAddStorageListener(function(changes, namespace) {
         if (namespace === 'sync') {
             if (changes.hideDownloadedMods) {
                 currentOptions.hideDownloadedMods = changes.hideDownloadedMods.newValue;
