@@ -1,4 +1,7 @@
-let nmdh_currentOptions = {
+(function(window){
+  const betterNexusMods = {};
+  window.betterNexusMods = betterNexusMods;
+  let currentOptions = {
     hideDownloadedMods: true,
     hoverChangelogs: true
 };
@@ -54,7 +57,7 @@ function refreshVisibility() {
     shouldHide = false; // Force mods to be visible on search pages
   } else {
     // If checkbox exists, use its state, otherwise default (e.g. true, or could be based on initial options)
-    shouldHide = checkbox?.checked ?? nmdh_currentOptions.hideDownloadedMods; 
+    shouldHide = checkbox?.checked ?? currentOptions.hideDownloadedMods; 
   }
 
   document
@@ -230,7 +233,7 @@ function setupChangelogHover(options) {
     let isHovering = false;
     
     const showTooltip = async () => {
-      if (!nmdh_currentOptions.hoverChangelogs) { // Check live global option
+      if (!currentOptions.hoverChangelogs) { // Check live global option
         hideTooltip(); // Ensure it's hidden if setting was turned off
         return;
       }
@@ -282,11 +285,11 @@ function init() {
   // Get user options from chrome.storage, then run logic
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
     chrome.storage.sync.get({ hideDownloadedMods: true, hoverChangelogs: true }, function(items) {
-      nmdh_currentOptions = items; // Store retrieved options
-      ensureToggleExists(nmdh_currentOptions);
-      refreshVisibility(); // refreshVisibility reads from the DOM checkbox, which ensureToggleExists sets based on nmdh_currentOptions
+      betterNexusMods.options = currentOptions = items; // Store retrieved options
+      ensureToggleExists(currentOptions);
+      refreshVisibility(); // refreshVisibility reads from the DOM checkbox, which ensureToggleExists sets based on currentOptions
       setTimeout(() => {
-        setupChangelogHover(nmdh_currentOptions);
+        setupChangelogHover(currentOptions);
         // Also setup on dynamic content changes (for infinite scroll, etc.) 
         const observer = new MutationObserver((mutations) => {
           const nodesAdded = mutations.some(mutation => 
@@ -294,7 +297,7 @@ function init() {
           );
           if (nodesAdded) {
             // Pass current options, which might have been updated by storage.onChanged
-            setupChangelogHover(nmdh_currentOptions); 
+            setupChangelogHover(currentOptions); 
           }
         });
         observer.observe(document.body, { childList: true, subtree: true });
@@ -303,16 +306,16 @@ function init() {
   } else {
     // fallback if chrome.storage is not available
     // Use default global options if storage is not available
-    ensureToggleExists(nmdh_currentOptions); 
+    ensureToggleExists(currentOptions); 
     refreshVisibility();
     setTimeout(() => {
-      setupChangelogHover(nmdh_currentOptions); 
+      setupChangelogHover(currentOptions); 
       const observer = new MutationObserver((mutations) => {
         const nodesAdded = mutations.some(mutation => 
           mutation.addedNodes && mutation.addedNodes.length > 0
         );
         if (nodesAdded) {
-          setupChangelogHover(nmdh_currentOptions);
+          setupChangelogHover(currentOptions);
         }
       });
       observer.observe(document.body, { childList: true, subtree: true });
@@ -328,18 +331,18 @@ if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged)
     chrome.storage.onChanged.addListener(function(changes, namespace) {
         if (namespace === 'sync') {
             if (changes.hideDownloadedMods) {
-                nmdh_currentOptions.hideDownloadedMods = changes.hideDownloadedMods.newValue;
+                currentOptions.hideDownloadedMods = changes.hideDownloadedMods.newValue;
                 const checkbox = document.querySelector("#nmdh-checkbox");
                 if (checkbox) {
-                    checkbox.checked = nmdh_currentOptions.hideDownloadedMods;
+                    checkbox.checked = currentOptions.hideDownloadedMods;
                 }
                 refreshVisibility(); // This will re-apply visibility based on the new checkbox state
             }
             if (changes.hoverChangelogs) {
-                nmdh_currentOptions.hoverChangelogs = changes.hoverChangelogs.newValue;
-                if (nmdh_currentOptions.hoverChangelogs) {
+                currentOptions.hoverChangelogs = changes.hoverChangelogs.newValue;
+                if (currentOptions.hoverChangelogs) {
                     // If re-enabled, ensure event listeners are set up for existing and future elements
-                    setupChangelogHover(nmdh_currentOptions);
+                    setupChangelogHover(currentOptions);
                 } else {
                     // If disabled, hide any active tooltips
                     const activeTooltips = document.querySelectorAll('.changelog-tooltip');
@@ -351,5 +354,7 @@ if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged)
 }
 
 // watch for SPA navigations / infinite scroll / toolbar creation
+const container = document.querySelector("main") || document.body;
 const obs = new MutationObserver(init);
-obs.observe(document.documentElement, { childList: true, subtree: true });
+if (container) obs.observe(container, { childList: true, subtree: true });
+})();

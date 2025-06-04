@@ -1,6 +1,6 @@
 // Infinite Scroll for Nexus Mods main mods page
 let isInfiniteScrollEnabled = true; // Default to true, will be updated from storage
-let scrollListenerAttached = false;
+let observer = null;
 
 (function() {
     console.log('[Betternexusmods] infiniteScroll.js loaded', window.location.href);
@@ -75,33 +75,42 @@ let scrollListenerAttached = false;
         }, 1200); // Allow time for mods to load
     }
 
-    function onScroll() {
-        if (loading) return;
-        // Only trigger when at the very bottom of the page
-        if ((window.innerHeight + Math.ceil(window.scrollY)) >= document.body.offsetHeight) {
-            appendNextPage();
-        }
-    }
-
     function initInfiniteScroll() {
-        if (isInfiniteScrollEnabled && !scrollListenerAttached) {
-            window.addEventListener('scroll', onScroll);
-            scrollListenerAttached = true;
-            console.log('[Betternexusmods] Infinite Scroll: Event listener ADDED');
-        } else if (!isInfiniteScrollEnabled && scrollListenerAttached) {
-            window.removeEventListener('scroll', onScroll);
-            scrollListenerAttached = false;
-            console.log('[Betternexusmods] Infinite Scroll: Event listener REMOVED');
+        const container = getModListContainer();
+        if (!container) return;
+
+        if (isInfiniteScrollEnabled && !observer) {
+            if (!sentinel) {
+                sentinel = document.createElement('div');
+                sentinel.id = 'nmdh-infinite-sentinel';
+                container.appendChild(sentinel);
+            }
+
+            observer = new IntersectionObserver((entries) => {
+                if (entries.some(e => e.isIntersecting)) {
+                    appendNextPage();
+                }
+            }, { rootMargin: '200px' });
+            observer.observe(sentinel);
+            console.log('[Betternexusmods] Infinite Scroll: Observer ADDED');
+        } else if (!isInfiniteScrollEnabled && observer) {
+            observer.disconnect();
+            observer = null;
+            if (sentinel) sentinel.remove();
+            sentinel = null;
+            console.log('[Betternexusmods] Infinite Scroll: Observer REMOVED');
         }
     }
 
     function disableInfiniteScroll() {
-        if (scrollListenerAttached) {
-            window.removeEventListener('scroll', onScroll);
-            scrollListenerAttached = false;
-            console.log('[Betternexusmods] Infinite Scroll: Event listener REMOVED due to option change');
+        if (observer) {
+            observer.disconnect();
+            observer = null;
         }
-        // Remove loader if it exists
+        if (sentinel) {
+            sentinel.remove();
+            sentinel = null;
+        }
         let loader = document.getElementById('nmdh-infinite-loader');
         if (loader) loader.remove();
     }
@@ -122,3 +131,4 @@ let scrollListenerAttached = false;
         });
     }
 })();
+
