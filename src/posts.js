@@ -69,7 +69,7 @@ function getFooterFromTile(modTile) {
   );
 }
 
-function buildPostsElement(initialText = "…") {
+function buildPostsElement(initialText = "...") {
   const container = document.createElement("span");
   container.classList.add("mod-tile-posts-count-element");
 
@@ -127,7 +127,7 @@ async function processModTile(modTile) {
   }
 
   // Insert placeholder immediately so UI confirms selector correctness
-  const postsElement = buildPostsElement("…");
+  const postsElement = buildPostsElement("...");
   footer.appendChild(postsElement);
 
   try {
@@ -175,7 +175,7 @@ function addPostsCountToModComponent() {
   });
 }
 
-// === Mutation observer for infinite scroll =================================
+// === Mutation observer for dynamically added tiles ==========================
 
 function setupModComponentObserver() {
   if (modTileObserver) modTileObserver.disconnect();

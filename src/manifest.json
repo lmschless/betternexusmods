@@ -25,7 +25,6 @@
       ],
       "js": [
         "index.js",
-        "infiniteScroll.js",
         "posts.js"
       ],
       "css": [
