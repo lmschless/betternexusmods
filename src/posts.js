@@ -57,6 +57,16 @@ function getModUrlFromTile(modTile) {
   return null;
 }
 
+function buildPostsUrl(modUrl) {
+  try {
+    const url = new URL(modUrl, location.origin);
+    url.searchParams.set("tab", "posts");
+    return url.href;
+  } catch {
+    return modUrl.includes("?") ? `${modUrl}&tab=posts` : `${modUrl}?tab=posts`;
+  }
+}
+
 function getFooterFromTile(modTile) {
   // Footer in your screenshot: div.mt-auto...bg-surface-high...px-3
   // Make selectors resilient to class order and minor changes.
@@ -69,20 +79,24 @@ function getFooterFromTile(modTile) {
   );
 }
 
-function buildPostsElement(initialText = "...") {
+function buildPostsElement(initialText = "...", postsUrl = "#") {
   const container = document.createElement("span");
   container.classList.add("mod-tile-posts-count-element");
 
   // Match the style of other footer items (downloads, size, etc.)
   container.innerHTML = `
-    <p class="typography-body-sm text-neutral-moderate flex items-center gap-x-1 leading-4" style="white-space:nowrap;">
+    <a class="typography-body-sm flex items-center gap-x-1 leading-4" style="white-space:nowrap; color:#f5f6fa; background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.32); border-radius:4px; padding:0.125rem 0.375rem; text-decoration:underline; text-underline-offset:0.15em; cursor:pointer;" aria-label="View mod posts">
       <svg viewBox="0 0 24 24" role="presentation" class="shrink-0" style="width: 1rem; height: 1rem;">
         <path d="M17,12V3A1,1 0 0,0 16,2H3A1,1 0 0,0 2,3V17L6,13H16A1,1 0 0,0 17,12M21,6H19V15H6V17A1,1 0 0,0 7,18H18L22,22V7A1,1 0 0,0 21,6Z" style="fill: currentcolor;"></path>
       </svg>
       <span class="sr-only">Posts</span>
       <span data-e2eid="mod-tile-posts">${initialText}</span>
-    </p>
+    </a>
   `;
+
+  const link = container.querySelector("a");
+  link.href = postsUrl;
+  link.addEventListener("click", event => event.stopPropagation());
 
   return container;
 }
@@ -127,7 +141,7 @@ async function processModTile(modTile) {
   }
 
   // Insert placeholder immediately so UI confirms selector correctness
-  const postsElement = buildPostsElement("...");
+  const postsElement = buildPostsElement("...", buildPostsUrl(modUrl));
   footer.appendChild(postsElement);
 
   try {
