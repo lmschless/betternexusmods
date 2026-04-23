@@ -70,7 +70,9 @@ describe('Posts feature', () => {
     // Now that the element has appeared, make further assertions
     // Re-query from document to ensure we have the latest reference after waitFor
     const postElement = document.querySelector('[data-e2eid="mod-tile"] .mod-tile-posts-count-element');
+    const postLink = postElement.querySelector('a');
     expect(postElement.textContent).toContain('123'); 
+    expect(postLink.href).toBe('http://localhost/nexusmods/skyrimspecialedition/mods/123?tab=posts');
     expect(modTile.getAttribute('data-posts-added')).toBe('true');
     expect(chrome.storage.sync.get).toHaveBeenCalled(); // Verify storage was checked
   });

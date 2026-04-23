@@ -5,8 +5,6 @@
 This version introduces several new features to enhance your Nexus Mods browsing experience. All features can be toggled on or off via the extension's popup menu.
 
 *   **Hide Downloaded Mods:** Automatically hides mods that you have already downloaded, decluttering mod listings.
-*   **Changelog on Hover:** Quickly view a mod's recent changelog by simply hovering over a designated icon or area (details may vary based on Nexus Mods page structure).
-*   **Infinite Scrolling:** Seamlessly load more mods as you scroll down on mod listing pages, eliminating the need for pagination.
 *   **Display Post Count:** Shows the number of posts (comments) directly on the mod tile or mod page, giving you a quick insight into community discussion.
 
 We hope you enjoy these new improvements! Please report any issues or provide feedback.
@@ -14,8 +12,8 @@ We hope you enjoy these new improvements! Please report any issues or provide fe
 # Known Issues - BetterNexusMods Extension
 
 ## Active Issues
-1.  **Post Counts Not Appearing on Subsequent Pages/Infinite Scroll**
-    -   **Description**: Post counts are correctly displayed on the initial mod listing page. However, when navigating to subsequent pages or when new mods are loaded via infinite scroll (e.g., by `infinitescroll.js`), the post counts do not appear for these newly loaded mod tiles.
+1.  **Post Counts Not Appearing on Dynamically Loaded Pages**
+    -   **Description**: Post counts are correctly displayed on the initial mod listing page. However, when navigating to subsequent pages or when new mod tiles are dynamically added, the post counts do not appear for these newly loaded mod tiles.
     -   **Status**: Newly reported.
     -   **Suspected Cause**: The `MutationObserver` (`modTileObserver`) in `setupModComponentObserver` might not be correctly identifying or processing all newly added mod tiles after the initial page load, or `addPostsCountToModComponent` is not being (re)triggered effectively for these new tiles.
     -   **Status**: Under investigation.

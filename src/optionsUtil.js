@@ -2,13 +2,11 @@
   function saveOptions(e) {
     if (e && e.preventDefault) e.preventDefault();
     const hideDownloadedMods = document.getElementById('hideDownloadedMods').checked;
-    const hoverChangelogs = document.getElementById('hoverChangelogs').checked;
-    const infiniteScroll = document.getElementById('infiniteScroll').checked;
     const displayPostCount = document.getElementById('displayPostCount').checked;
+    const downloadedModsFilter = hideDownloadedMods ? 'hide' : 'off';
     const data = {
       hideDownloadedMods,
-      hoverChangelogs,
-      infiniteScroll,
+      downloadedModsFilter,
       displayPostCount
     };
     const darkModeEl = document.getElementById('darkMode');
@@ -27,15 +25,15 @@
 
   function restoreOptions() {
     chrome.storage.sync.get({
+      downloadedModsFilter: 'hide',
       hideDownloadedMods: true,
-      hoverChangelogs: true,
-      infiniteScroll: true,
       displayPostCount: true,
       darkMode: false
     }, function(items) {
-      document.getElementById('hideDownloadedMods').checked = (typeof items.hideDownloadedMods === 'boolean') ? items.hideDownloadedMods : true;
-      document.getElementById('hoverChangelogs').checked = (typeof items.hoverChangelogs === 'boolean') ? items.hoverChangelogs : true;
-      document.getElementById('infiniteScroll').checked = (typeof items.infiniteScroll === 'boolean') ? items.infiniteScroll : true;
+      const hideDownloadedMods = typeof items.downloadedModsFilter === 'string'
+        ? items.downloadedModsFilter === 'hide'
+        : items.hideDownloadedMods !== false;
+      document.getElementById('hideDownloadedMods').checked = hideDownloadedMods;
       document.getElementById('displayPostCount').checked = (typeof items.displayPostCount === 'boolean') ? items.displayPostCount : true;
       const darkModeEl = document.getElementById('darkMode');
       if (darkModeEl) {
