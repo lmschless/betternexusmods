@@ -81,21 +81,42 @@
     return document.querySelector("#nmdh-filter");
   }
 
+  function getUpdatedOnlyCheckbox() {
+    return document.querySelector("#nmdh-updated-only");
+  }
+
   function ensureToggleExists(options) {
     const toolbar = getToolbar();
     if (!toolbar) return; // toolbar not yet in DOM
 
     const existingToggle = document.querySelector("#nmdh-toggle");
+    const existingUpdatedToggle = document.querySelector("#nmdh-updated-toggle");
 
     if (window.location.href.includes('search')) {
       if (existingToggle) {
         existingToggle.remove();
       }
+      if (existingUpdatedToggle) {
+        existingUpdatedToggle.remove();
+      }
       return; // Do not add toggle on search pages
     }
 
+    if (!existingUpdatedToggle) {
+      const updatedWrapper = document.createElement("label");
+      updatedWrapper.id = "nmdh-updated-toggle";
+      updatedWrapper.className = "nmdh-label"; // styled in CSS
+      updatedWrapper.innerHTML = `
+        <span>Updated</span>
+        <input id="nmdh-updated-only" type="checkbox" aria-label="Only show mods with updates available">
+      `;
+
+      // Put it to the left of the downloaded mods control
+      toolbar.prepend(updatedWrapper);
+    }
+
     if (!existingToggle) {
-      const wrapper = document.createElement("label");
+      const wrapper = document.createElement("div");
       wrapper.id = "nmdh-toggle";
       wrapper.className = "nmdh-label"; // styled in CSS
       wrapper.innerHTML = `
@@ -108,10 +129,15 @@
       `;
 
       // put it at the very left
-      toolbar.prepend(wrapper);
+      if (document.querySelector("#nmdh-updated-toggle")) {
+        document.querySelector("#nmdh-updated-toggle").after(wrapper);
+      } else {
+        toolbar.prepend(wrapper);
+      }
     }
 
     const dropdown = getFilterDropdown();
+    const updatedOnlyCheckbox = getUpdatedOnlyCheckbox();
     if (!dropdown) return;
 
     dropdown.value = (options && options.downloadedModsFilter) || FILTER_HIDE;
@@ -119,6 +145,11 @@
     if (!dropdown.dataset.nmdhBound) {
       dropdown.addEventListener("change", refreshVisibility);
       dropdown.dataset.nmdhBound = "true";
+    }
+
+    if (updatedOnlyCheckbox && !updatedOnlyCheckbox.dataset.nmdhBound) {
+      updatedOnlyCheckbox.addEventListener("change", refreshVisibility);
+      updatedOnlyCheckbox.dataset.nmdhBound = "true";
     }
   }
 
@@ -140,6 +171,16 @@
         }
       });
 
+    // Also include cards discoverable from the update-available marker
+    document
+      .querySelectorAll('[data-e2eid="mod-tile-update-available"]')
+      .forEach(flag => {
+        const card = flag.closest('[data-e2eid="mod-tile"], .file-row, li, article');
+        if (card) {
+          cards.add(card);
+        }
+      });
+
     return Array.from(cards);
   }
 
@@ -147,9 +188,15 @@
     return !!card.querySelector('[data-e2eid="mod-tile-downloaded"]');
   }
 
+  function isUpdatedCard(card) {
+    return !!card.querySelector('[data-e2eid="mod-tile-update-available"]');
+  }
+
   function refreshVisibility() {
     let filterMode = FILTER_OFF;
     const dropdown = getFilterDropdown();
+    const updatedOnlyCheckbox = getUpdatedOnlyCheckbox();
+    const onlyUpdated = !window.location.href.includes('search') && !!updatedOnlyCheckbox?.checked;
 
     if (window.location.href.includes('search')) {
       filterMode = FILTER_OFF; // Force mods to be visible on search pages
@@ -159,12 +206,17 @@
 
     getModCards().forEach(card => {
       const downloaded = isDownloadedCard(card);
+      const updated = isUpdatedCard(card);
       let shouldHide = false;
 
       if (filterMode === FILTER_HIDE) {
         shouldHide = downloaded;
       } else if (filterMode === FILTER_SHOW) {
         shouldHide = !downloaded;
+      }
+
+      if (onlyUpdated && !updated) {
+        shouldHide = true;
       }
 
       card.classList.toggle("nmdh-hidden", shouldHide);
