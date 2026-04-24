@@ -2,7 +2,8 @@
 .nmdh-hidden { display: none !important; }
 
 /* --- dropdown styling ---------------------------------------------------- */
-#nmdh-toggle {
+#nmdh-toggle,
+#nmdh-updated-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -15,13 +16,28 @@
   color: #d7dbe2;
 }
 
-#nmdh-toggle:hover {
+#nmdh-toggle:hover,
+#nmdh-updated-toggle:hover {
   background: #2a2d34;
 }
 
-#nmdh-toggle span {
+#nmdh-toggle span,
+#nmdh-updated-toggle span {
   white-space: nowrap;
   color: #d7dbe2;
+}
+
+#nmdh-updated-only {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #d7dbe2;
+  cursor: pointer;
+}
+
+#nmdh-updated-only:focus {
+  outline: 2px solid rgba(120, 130, 150, 0.55);
+  outline-offset: 2px;
 }
 
 #nmdh-filter {
